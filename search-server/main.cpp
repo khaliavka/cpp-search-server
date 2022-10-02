@@ -164,7 +164,7 @@ private:
         if (ratings.empty()) {
             return 0;
         }
-        return accumulate(ratings.begin(),ratings.end(), 0) /
+        return accumulate(ratings.begin(), ratings.end(), 0) /
                 static_cast<int>(ratings.size());
     }
 
