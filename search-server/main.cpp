@@ -2,6 +2,7 @@
 #include <cmath>
 #include <iostream>
 #include <map>
+#include <numeric>
 #include <set>
 #include <string>
 #include <utility>
@@ -10,6 +11,7 @@
 using namespace std;
 
 const int MAX_RESULT_DOCUMENT_COUNT = 5;
+const double TOLERANCE = 1e-6;
 
 string ReadLine() {
     string s;
@@ -83,7 +85,7 @@ public:
 
         sort(matched_documents.begin(), matched_documents.end(),
              [](const Document& lhs, const Document& rhs) {
-                 if (abs(lhs.relevance - rhs.relevance) < 1e-6) {
+                 if (abs(lhs.relevance - rhs.relevance) < TOLERANCE) {
                      return lhs.rating > rhs.rating;
                  } else {
                      return lhs.relevance > rhs.relevance;
@@ -96,9 +98,12 @@ public:
     }
     
     vector<Document> FindTopDocuments(const string& raw_query,
-                    DocumentStatus requested_status = DocumentStatus::ACTUAL) const {
-                        return FindTopDocuments(raw_query,
-                            [requested_status](int document_id, DocumentStatus status, int document_rating) {
+                    DocumentStatus requested_status =
+                    DocumentStatus::ACTUAL) const {
+                    return FindTopDocuments(raw_query,
+                            [requested_status](int document_id,
+                                DocumentStatus status,
+                                int document_rating) {
                                 return status == requested_status;
                             });
     }
@@ -159,11 +164,8 @@ private:
         if (ratings.empty()) {
             return 0;
         }
-        int rating_sum = 0;
-        for (const int rating : ratings) {
-            rating_sum += rating;
-        }
-        return rating_sum / static_cast<int>(ratings.size());
+        return accumulate(ratings.begin(),ratings.end(), 0) /
+                static_cast<int>(ratings.size());
     }
 
     struct QueryWord {
@@ -215,9 +217,10 @@ private:
             }
             const double inverse_document_freq = ComputeWordInverseDocumentFreq(word);
             for (const auto [document_id, term_freq] : word_to_document_freqs_.at(word)) {
+                const auto& document_data = documents_.at(document_id);
                 if (predicate(document_id,
-                    documents_.at(document_id).status,
-                    documents_.at(document_id).rating)) {
+                    document_data.status,
+                    document_data.rating)) {
                     document_to_relevance[document_id] += term_freq * inverse_document_freq;
                 }
             }
