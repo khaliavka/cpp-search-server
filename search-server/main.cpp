@@ -68,7 +68,7 @@ public:
     }
 
     void AddDocument(int document_id, const string& document, DocumentStatus status,
-                     const vector<int>& ratings) {
+        const vector<int>& ratings) {
         const vector<string> words = SplitIntoWordsNoStop(document);
         const double inv_word_count = 1.0 / words.size();
         for (const string& word : words) {
@@ -76,21 +76,19 @@ public:
         }
         documents_.emplace(document_id, DocumentData{ComputeAverageRating(ratings), status});
     }
-    
     template <typename Predicate>
     vector<Document> FindTopDocuments(const string& raw_query,
-                                      Predicate predicate) const {
+        Predicate predicate) const {
         const Query query = ParseQuery(raw_query);
         auto matched_documents = FindAllDocuments(query, predicate);
-
         sort(matched_documents.begin(), matched_documents.end(),
-             [](const Document& lhs, const Document& rhs) {
-                 if (abs(lhs.relevance - rhs.relevance) < TOLERANCE) {
-                     return lhs.rating > rhs.rating;
-                 } else {
-                     return lhs.relevance > rhs.relevance;
-                 }
-             });
+            [](const Document& lhs, const Document& rhs) {
+                if (abs(lhs.relevance - rhs.relevance) < TOLERANCE) {
+                    return lhs.rating > rhs.rating;
+                } else {
+                    return lhs.relevance > rhs.relevance;
+                }
+            });
         if (matched_documents.size() > MAX_RESULT_DOCUMENT_COUNT) {
             matched_documents.resize(MAX_RESULT_DOCUMENT_COUNT);
         }
@@ -98,14 +96,11 @@ public:
     }
     
     vector<Document> FindTopDocuments(const string& raw_query,
-                    DocumentStatus requested_status =
-                    DocumentStatus::ACTUAL) const {
-                    return FindTopDocuments(raw_query,
-                            [requested_status](int document_id,
-                                DocumentStatus status,
-                                int document_rating) {
-                                return status == requested_status;
-                            });
+        DocumentStatus requested_status = DocumentStatus::ACTUAL) const {
+        return FindTopDocuments(raw_query, [requested_status](
+            int document_id, DocumentStatus status, int document_rating) {
+                return status == requested_status;
+            });
     }
     
     int GetDocumentCount() const {
