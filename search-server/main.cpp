@@ -85,11 +85,10 @@ public:
     template <typename StringContainer>
     explicit SearchServer(const StringContainer& stop_words)
         : stop_words_(MakeUniqueNonEmptyStrings(stop_words)) {
-            for (const auto& word : stop_words_) {
-                if (!IsValidStr(word)) {
-                    throw invalid_argument("CONSTRUCTOR_SYMBOLS"s);
+            if (any_of(stop_words_.begin(), stop_words_.end(),
+                [](const string& str){return !IsValidStr(str);})) {
+                    throw invalid_argument("INVALID_SYMBOLS"s);
                 }
-            }
     }
 
     explicit SearchServer(const string& stop_words)
@@ -107,7 +106,7 @@ public:
             throw invalid_argument("ADD_DOC_SAME_ID"s);
         }
         if (!IsValidStr(document)) {
-            throw invalid_argument("ADD_DOC_SYMBOLS"s);
+            throw invalid_argument("INVALID_SYMBOLS"s);
         }
         const vector<string> words = SplitIntoWordsNoStop(document);
         const double inv_word_count = 1.0 / words.size();
@@ -120,12 +119,8 @@ public:
     template <typename DocumentPredicate>
     vector<Document> FindTopDocuments(const string& raw_query,
                                         DocumentPredicate document_predicate) const {
-        if(!IsValidStr(raw_query)) {
-            throw invalid_argument("FIND_TOP_DOC_SYMBOLS"s);
-        }
         const auto query = ParseQuery(raw_query);
         auto matched_documents = FindAllDocuments(query, document_predicate);
-
         sort(matched_documents.begin(), matched_documents.end(),
             [](const Document& lhs, const Document& rhs) {
                 if (abs(lhs.relevance - rhs.relevance) < TOLERANCE) {
@@ -134,11 +129,9 @@ public:
                     return lhs.relevance > rhs.relevance;
                 }
             });
-
             if (matched_documents.size() > MAX_RESULT_DOCUMENT_COUNT) {
                 matched_documents.resize(MAX_RESULT_DOCUMENT_COUNT);
             }
-            
         return matched_documents;
     }
 
@@ -167,9 +160,6 @@ public:
 
     tuple<vector<string>, DocumentStatus> MatchDocument(const string& raw_query,
                                                                     int document_id) const {
-        if (!IsValidStr(raw_query)) {
-            throw invalid_argument("MATCH_DOC_SYMBOLS"s);
-        }
         const auto query = ParseQuery(raw_query);
         vector<string> matched_words;
         for (const string& word : query.plus_words) {
@@ -252,7 +242,7 @@ private:
         if (text[0] == '-') {
             throw invalid_argument("DOUBLE_DASH"s);
         }
-        return QueryWord{text, is_minus, IsStopWord(text)};
+        return {text, is_minus, IsStopWord(text)};
     }
 
     struct Query {
@@ -261,6 +251,9 @@ private:
     };
 
     Query ParseQuery(const string& text) const {
+        if (!IsValidStr(text)) {
+            throw invalid_argument("INVALID_SYMBOLS"s);
+        }
         Query query;
         for (const string& word : SplitIntoWords(text)) {
             const auto query_word = ParseQueryWord(word);
@@ -338,7 +331,7 @@ enum class Exception {
     PROPER_DATA
 };
 int main() {
-    Exception key = Exception::CONSTRUCTOR_SYMBOLS;
+    Exception key = Exception::PROPER_DATA;
     switch (key) {
     case Exception::CONSTRUCTOR_SYMBOLS:
         try {
