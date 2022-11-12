@@ -30,7 +30,7 @@ template <typename It>
 IteratorPair<It>::IteratorPair(It begin, It end) 
             : begin_(begin)
             , end_(end) {
-        }
+}
 template <typename It>
 It IteratorPair<It>::begin() const {
     return begin_;

@@ -22,22 +22,21 @@ enum class DocumentStatus {
 class SearchServer {
 public:
     inline static constexpr int INVALID_DOCUMENT_ID = -1;
-
     template <typename StringContainer>
     explicit SearchServer(const StringContainer& stop_words);
     SearchServer(const std::string& stop_words);
-    void AddDocument(int document_id, const std::string& document, DocumentStatus status,
-                                    const std::vector<int>& ratings);
+    void AddDocument(int document_id, const std::string& document,
+            DocumentStatus status, const std::vector<int>& ratings);
     template <typename DocumentPredicate>
     std::vector<Document> FindTopDocuments(const std::string& raw_query,
-                                        DocumentPredicate document_predicate) const;
+                                DocumentPredicate document_predicate) const;
     std::vector<Document> FindTopDocuments(const std::string& raw_query,
-                                        DocumentStatus status) const;
+                                                DocumentStatus status) const;
     std::vector<Document> FindTopDocuments(const std::string& raw_query) const;
     int GetDocumentCount() const;
     int GetDocumentId(int) const;
     std::tuple<std::vector<std::string>, DocumentStatus> MatchDocument(const std::string& raw_query,
-                                                                    int document_id) const;
+                                                                                int document_id) const;
 private:
     struct DocumentData {
         int rating;
@@ -84,7 +83,7 @@ SearchServer::SearchServer(const StringContainer& stop_words)
 }
 template <typename DocumentPredicate>
 std::vector<Document> SearchServer::FindTopDocuments(const std::string& raw_query,
-                                    DocumentPredicate document_predicate) const {
+                                        DocumentPredicate document_predicate) const {
     const auto query = ParseQuery(raw_query);
     auto matched_documents = FindAllDocuments(query, document_predicate);
     std::sort(matched_documents.begin(), matched_documents.end(),
@@ -102,7 +101,7 @@ std::vector<Document> SearchServer::FindTopDocuments(const std::string& raw_quer
 }
 template <typename DocumentPredicate>
 std::vector<Document> SearchServer::FindAllDocuments(const Query& query,
-                            DocumentPredicate document_predicate) const {
+                                DocumentPredicate document_predicate) const {
     std::map<int, double> document_to_relevance;
     for (const std::string& word : query.plus_words) {
         if (word_to_document_freqs_.count(word) == 0) {
