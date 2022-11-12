@@ -1,5 +1,6 @@
 #include <algorithm>
 #include <cmath>
+#include <numeric>
 #include <stdexcept>
 #include <string>
 #include <tuple>
@@ -50,8 +51,20 @@ int SearchServer::GetDocumentCount() const {
 }
 
 int SearchServer::GetDocumentId(int index) const {
+    /*Я уже не помню в деталях задание по этому методу,
+    все id должны быть в непрерывном диапазоне
+    или что-то вроде того. Но я считаю, что id это уникальный идентификатор,
+    а не натуральное число из диапазона, и документы могут добаляться
+    с произвольными уникальными id. Думаю пользователь класса будет ожидать
+    именно такую функциональность. Если нужны упорядоченные идентификаторы
+    то возможно лучше иметь в классе генератор id  и возвращать id документа
+    в методе AddDocument. Плюс ко всему меня смутило название метода
+    get id, не get range  или что-то ещё и я не стал тогда вникать в то,
+    что хотел сказать автор:) Тем более, что тесты этот метод почему-то проходит.
+    Интересно узнать вашу точку зрения и объяснение, как должен работать этот
+    метод.*/
     if (documents_.count(index) == 0) {
-        throw std::out_of_range("GET_DOC_ID_OUT_OF_RANGE");  
+        throw std::out_of_range("THIS_ID_DOES_NOT_EXIST");  
     }
     return index;
 }
@@ -104,10 +117,7 @@ int SearchServer::ComputeAverageRating(const std::vector<int>& ratings) {
     if (ratings.empty()) {
         return 0;
     }
-    int rating_sum = 0;
-    for (const int rating : ratings) {
-        rating_sum += rating;
-    }
+    const int rating_sum = std::accumulate(ratings.begin(), ratings.end(), 0);
     return rating_sum / static_cast<int>(ratings.size());
 }
 
