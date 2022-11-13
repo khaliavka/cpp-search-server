@@ -5,9 +5,9 @@
 #include <vector>
 
 template <typename It>
-class IteratorPair {
+class IteratorRange {
     public:
-        explicit IteratorPair(It begin, It end);
+        explicit IteratorRange(It begin, It end);
         It begin() const;
         It end() const;
         int size() const;
@@ -23,24 +23,24 @@ class Paginator {
         auto begin() const;
         auto end() const;
     private:
-       std::vector<IteratorPair<It>> pages_;
+       std::vector<IteratorRange<It>> pages_;
 };
 
 template <typename It>
-IteratorPair<It>::IteratorPair(It begin, It end) 
+IteratorRange<It>::IteratorRange(It begin, It end) 
             : begin_(begin)
             , end_(end) {
 }
 template <typename It>
-It IteratorPair<It>::begin() const {
+It IteratorRange<It>::begin() const {
     return begin_;
 }
 template <typename It>
-It IteratorPair<It>::end() const {
+It IteratorRange<It>::end() const {
     return end_;
 }
 template <typename It>
-int IteratorPair<It>::size() const {
+int IteratorRange<It>::size() const {
     return std::distance(begin_, end_);
 }
 
@@ -48,10 +48,10 @@ template <typename It>
 Paginator<It>::Paginator(It begin, It end, size_t page_size) {
     const size_t full_pages_count = std::distance(begin, end) / page_size;
     for (size_t i = 0; i < full_pages_count; ++i) {
-        pages_.push_back(IteratorPair<It>(begin, std::next(begin, page_size)));
+        pages_.push_back(IteratorRange<It>(begin, std::next(begin, page_size)));
         std::advance(begin, page_size);
     }
-    if (std::distance(begin, end) > 0) pages_.push_back(IteratorPair<It>(begin, end));
+    if (std::distance(begin, end) > 0) pages_.push_back(IteratorRange<It>(begin, end));
 }
 template <typename It>
 auto Paginator<It>::begin() const {
@@ -63,7 +63,7 @@ auto Paginator<It>::end() const {
 }
 
 template <typename It>
-std::ostream& operator<<(std::ostream& os, const IteratorPair<It> page) {
+std::ostream& operator<<(std::ostream& os, const IteratorRange<It> page) {
     for (auto it = page.begin(); it != page.end(); std::advance(it, 1)) {
         os << *it;
     }
