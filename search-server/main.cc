@@ -1,6 +1,7 @@
 #include <iostream>
 
 #include "document.h"
+#include "log_duration.h"
 #include "paginator.h"
 #include "read_input_functions.h"
 #include "request_queue.h"
@@ -19,7 +20,13 @@ int main() {
     search_server.AddDocument(3, "big cat fancy collar "s, DocumentStatus::ACTUAL, {1, 2, 8});
     search_server.AddDocument(4, "big dog sparrow Eugene"s, DocumentStatus::ACTUAL, {1, 3, 2});
     search_server.AddDocument(5, "big dog sparrow Vasiliy"s, DocumentStatus::ACTUAL, {1, 1, 1});
-
+    {
+        LOG_DURATION_STREAM("Operation time"s, cout);
+        for (int i = 6; i < 1000; ++i) {
+            search_server.AddDocument(i, "big dog sparrow Vasiliy"s, DocumentStatus::ACTUAL, {i, 1, 1});
+        }
+        const auto s_r = search_server.FindTopDocuments("curly dog"s);
+    }
     const auto search_results = search_server.FindTopDocuments("curly dog"s);
     const auto pages = Paginate(search_results, PAGE_SIZE);
     // Выводим найденные документы по страницам
