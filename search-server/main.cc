@@ -26,6 +26,12 @@ int main() {
             search_server.AddDocument(i, "big dog sparrow Vasiliy"s, DocumentStatus::ACTUAL, {i, 1, 1});
         }
         const auto s_r = search_server.FindTopDocuments("curly dog"s);
+        const auto pages = Paginate(s_r, PAGE_SIZE);
+        // Выводим найденные документы по страницам
+        for (auto page = pages.begin(); page != pages.end(); ++page) {
+            std::cout << *page << std::endl;
+            std::cout << "Page break"s << std::endl;
+        }
     }
     const auto search_results = search_server.FindTopDocuments("curly dog"s);
     const auto pages = Paginate(search_results, PAGE_SIZE);
