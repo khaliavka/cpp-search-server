@@ -11,26 +11,23 @@
 #define LOG_DURATION_STREAM(X, Y) LogDuration UNIQUE_VAR_NAME_PROFILE(X, Y)
 
 class LogDuration {
-public:
-    // заменим имя типа std::chrono::steady_clock
-    // с помощью using для удобства
-    using Clock = std::chrono::steady_clock;
-    LogDuration(const std::string& s, std::ostream& os = std::cerr) 
-        : os_(os)
-        , what_(s) {
-    }
+ public:
+  using Clock = std::chrono::steady_clock;
+  LogDuration(const std::string& s, std::ostream& os = std::cerr)
+      : os_(os), what_(s) {}
 
-    ~LogDuration() {
-        using namespace std::chrono;
-        using namespace std::literals;
+  ~LogDuration() {
+    using namespace std::chrono;
+    using namespace std::literals;
 
-        const auto end_time = Clock::now();
-        const auto dur = end_time - start_time_;
-        os_ << what_ << ": "s << duration_cast<milliseconds>(dur).count() << " ms"s << std::endl;
-    }
+    const auto end_time = Clock::now();
+    const auto dur = end_time - start_time_;
+    os_ << what_ << ": "s << duration_cast<milliseconds>(dur).count() << " ms"s
+        << std::endl;
+  }
 
-private:
-    std::ostream& os_;
-    const std::string what_;
-    const Clock::time_point start_time_ = Clock::now();
+ private:
+  std::ostream& os_;
+  const std::string what_;
+  const Clock::time_point start_time_ = Clock::now();
 };
