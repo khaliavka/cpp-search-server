@@ -7,6 +7,7 @@ template <typename It>
 class IteratorRange {
  public:
   explicit IteratorRange(It begin, It end);
+
   It begin() const;
   It end() const;
   int size() const;
@@ -20,6 +21,7 @@ template <typename It>
 class Paginator {
  public:
   Paginator(It begin, It end, size_t page_size);
+
   auto begin() const;
   auto end() const;
 
@@ -28,15 +30,20 @@ class Paginator {
 };
 
 template <typename It>
-IteratorRange<It>::IteratorRange(It begin, It end) : begin_(begin), end_(end) {}
+IteratorRange<It>::IteratorRange(It begin, It end)
+  : begin_(begin), end_(end) {
+}
+
 template <typename It>
 It IteratorRange<It>::begin() const {
   return begin_;
 }
+
 template <typename It>
 It IteratorRange<It>::end() const {
   return end_;
 }
+
 template <typename It>
 int IteratorRange<It>::size() const {
   return std::distance(begin_, end_);
@@ -52,10 +59,12 @@ Paginator<It>::Paginator(It begin, It end, size_t page_size) {
   if (std::distance(begin, end) > 0)
     pages_.push_back(IteratorRange<It>(begin, end));
 }
+
 template <typename It>
 auto Paginator<It>::begin() const {
   return pages_.begin();
 }
+
 template <typename It>
 auto Paginator<It>::end() const {
   return pages_.end();

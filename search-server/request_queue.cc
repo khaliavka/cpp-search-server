@@ -4,7 +4,8 @@
 #include <vector>
 
 RequestQueue::RequestQueue(const SearchServer& search_server)
-    : no_result_requests_(0), search_server_(search_server) {}
+    : no_result_requests_(0), search_server_(search_server) {  
+}
 
 std::vector<Document> RequestQueue::AddFindRequest(const std::string& raw_query,
                                                    DocumentStatus status) {
@@ -13,6 +14,7 @@ std::vector<Document> RequestQueue::AddFindRequest(const std::string& raw_query,
   ProcessQueue(raw_query, result, result.empty(), status);
   return result;
 }
+
 std::vector<Document> RequestQueue::AddFindRequest(
     const std::string& raw_query) {
   std::vector<Document> result =
@@ -20,7 +22,10 @@ std::vector<Document> RequestQueue::AddFindRequest(
   ProcessQueue(raw_query, result, result.empty(), DocumentStatus::ACTUAL);
   return result;
 }
-int RequestQueue::GetNoResultRequests() const { return no_result_requests_; }
+
+int RequestQueue::GetNoResultRequests() const {
+  return no_result_requests_;
+}
 
 void RequestQueue::ProcessQueue(const std::string& raw_query,
                                 const std::vector<Document>& result,

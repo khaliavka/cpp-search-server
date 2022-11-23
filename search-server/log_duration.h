@@ -13,6 +13,7 @@
 class LogDuration {
  public:
   using Clock = std::chrono::steady_clock;
+  
   LogDuration(const std::string& s, std::ostream& os = std::cerr)
       : os_(os), what_(s) {}
 
