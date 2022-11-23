@@ -40,8 +40,8 @@ class SearchServer {
   const std::map<std::string, double>& GetWordFrequencies(
       int document_id) const;
 
-  auto begin() const;
-  auto end() const;
+  std::set<int>::const_iterator begin() const;
+  std::set<int>::const_iterator end() const;
 
  private:
   struct DocumentData {
@@ -141,5 +141,3 @@ std::vector<Document> SearchServer::FindAllDocuments(
   }
   return matched_documents;
 }
-
-void RemoveDuplicates(SearchServer& search_server);

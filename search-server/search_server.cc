@@ -164,9 +164,9 @@ double SearchServer::ComputeWordInverseDocumentFreq(
                   word_to_document_freqs_.at(word).size());
 }
 
-auto SearchServer::begin() const { return ids_.begin(); }
+std::set<int>::const_iterator SearchServer::begin() const { return ids_.cbegin(); }
 
-auto SearchServer::end() const { return ids_.end(); }
+std::set<int>::const_iterator SearchServer::end() const { return ids_.cend(); }
 
 const std::map<std::string, double>& SearchServer::GetWordFrequencies(
     int document_id) const {
@@ -175,21 +175,4 @@ const std::map<std::string, double>& SearchServer::GetWordFrequencies(
   }
   static const std::map<std::string, double> dummy;
   return dummy;
-}
-
-void RemoveDuplicates(SearchServer& search_server) {
-  std::map<std::string, std::vector<int>> duplicates;
-  for (const int document_id : search_server) {
-    const auto& word_freqs_ = search_server.GetWordFrequencies(document_id);
-    std::string key;
-    for (const auto& [word, _] : word_freqs_) {
-      key += word;
-    }
-    duplicates[key].push_back(document_id);
-  }
-  for (const auto& [_, ids] : duplicates) {
-    for (auto it = ids.cbegin() + 1; it != ids.cend(); ++it) {
-      search_server.RemoveDocument(*it);
-    }
-  }
 }
