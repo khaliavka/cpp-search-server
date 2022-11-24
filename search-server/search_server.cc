@@ -154,12 +154,8 @@ SearchServer::Query SearchServer::ParseQuery(const std::string& text) const {
   if (!IsValidStr(text)) {
     throw std::invalid_argument("INVALID_SYMBOLS"s);
   }
-
   Query query;
-  //SplitIntoWords заменил, но все проверки пришлось
-  //оставить потому-что NoStop метод не фильтрует
-  //случаи, когда слово одновременно минус и стоп.
-  for (const std::string& word : SplitIntoWordsNoStop(text)) {
+  for (const std::string& word : SplitIntoWords(text)) {
     const auto query_word = ParseQueryWord(word);
     if (!query_word.is_stop) {
       if (query_word.is_minus) {
