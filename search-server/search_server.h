@@ -1,9 +1,11 @@
 #pragma once
 #include <algorithm>
+#include <execution>
 #include <map>
 #include <set>
 #include <stdexcept>
 #include <string>
+#include <string_view>
 #include <vector>
 
 #include "document.h"
@@ -20,7 +22,10 @@ class SearchServer {
 
   void AddDocument(int document_id, const std::string& document,
                    DocumentStatus status, const std::vector<int>& ratings);
+
   void RemoveDocument(int document_id);
+  void RemoveDocument(const std::execution::sequenced_policy&, int document_id);
+  void RemoveDocument(const std::execution::parallel_policy&, int document_id);
 
   template <typename DocumentPredicate>
   std::vector<Document> FindTopDocuments(
@@ -34,6 +39,14 @@ class SearchServer {
   std::tuple<std::vector<std::string>, DocumentStatus> MatchDocument(
       const std::string& raw_query, int document_id) const;
 
+  std::tuple<std::vector<std::string>, DocumentStatus> MatchDocument(
+      const std::execution::sequenced_policy&, const std::string& raw_query,
+      int document_id) const;
+
+  std::tuple<std::vector<std::string>, DocumentStatus> MatchDocument(
+      const std::execution::parallel_policy&, const std::string& raw_query,
+      int document_id) const;
+      
   const std::map<std::string, double>& GetWordFrequencies(
       int document_id) const;
 
@@ -66,11 +79,11 @@ class SearchServer {
   QueryWord ParseQueryWord(std::string text) const;
 
   struct Query {
-    std::set<std::string> plus_words;
-    std::set<std::string> minus_words;
+    std::vector<std::string> plus_words;
+    std::vector<std::string> minus_words;
   };
 
-  Query ParseQuery(const std::string& text) const;
+  Query ParseQuery(const std::string& text, bool sort_query = true) const;
   // Existence required
   double ComputeWordInverseDocumentFreq(const std::string& word) const;
 
@@ -116,7 +129,7 @@ template <typename DocumentPredicate>
 std::vector<Document> SearchServer::FindAllDocuments(
     const Query& query, DocumentPredicate document_predicate) const {
   std::map<int, double> document_to_relevance;
-  
+
   for (const std::string& word : query.plus_words) {
     if (word_to_document_freqs_.count(word) == 0) {
       continue;
@@ -147,6 +160,6 @@ std::vector<Document> SearchServer::FindAllDocuments(
     matched_documents.push_back(
         {document_id, relevance, documents_.at(document_id).rating});
   }
-  
+
   return matched_documents;
 }
