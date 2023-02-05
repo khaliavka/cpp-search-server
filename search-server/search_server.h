@@ -271,7 +271,6 @@ template <typename DocumentPredicate>
 std::vector<Document> SearchServer::FindAllDocuments(
     const std::execution::parallel_policy&, const Query& query,
     DocumentPredicate document_predicate) const {
-      
   ConcurrentMap<int, double> document_to_relevance(BUCKET_COUNT);
 
   for_each(
@@ -297,7 +296,7 @@ std::vector<Document> SearchServer::FindAllDocuments(
       });
 
   for_each(
-      query.minus_words.cbegin(), query.minus_words.cend(),
+      std::execution::par, query.minus_words.cbegin(), query.minus_words.cend(),
       [this, &document_to_relevance](const auto& word) {
         if (word_to_document_freqs_.count(word) == 0) {
           return;
