@@ -31,28 +31,28 @@ class SearchServer {
   void RemoveDocument(const std::execution::sequenced_policy&, int document_id);
   void RemoveDocument(const std::execution::parallel_policy&, int document_id);
   void RemoveDocument(int document_id);
-  // 1
+ 
   template <typename ExecutionPolicy, typename DocumentPredicate>
   std::vector<Document> FindTopDocuments(
       const ExecutionPolicy& policy, std::string_view raw_query,
       DocumentPredicate document_predicate) const;
-  // 3
+
   template <typename ExecutionPolicy>
   std::vector<Document> FindTopDocuments(const ExecutionPolicy& policy,
                                          std::string_view raw_query,
                                          DocumentStatus status) const;
-  // 4
+
   template <typename ExecutionPolicy>
   std::vector<Document> FindTopDocuments(const ExecutionPolicy& policy,
                                          std::string_view raw_query) const;
-  // 5
+
   template <typename DocumentPredicate>
   std::vector<Document> FindTopDocuments(
       std::string_view raw_query, DocumentPredicate document_predicate) const;
-  // 6
+ 
   std::vector<Document> FindTopDocuments(std::string_view raw_query,
                                          DocumentStatus status) const;
-  // 7
+
   std::vector<Document> FindTopDocuments(std::string_view raw_query) const;
 
   size_t GetDocumentCount() const;
