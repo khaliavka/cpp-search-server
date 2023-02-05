@@ -49,7 +49,7 @@ void SearchServer::AddDocument(int document_id, std::string_view document,
 
 void SearchServer::RemoveDocumentInternal(int document_id) {
   document_to_word_freqs_.erase(document_id);
-  raw_documents_.erase(document_id);
+  //raw_documents_.erase(document_id);
   documents_.erase(document_id);
   ids_.erase(document_id);
 }

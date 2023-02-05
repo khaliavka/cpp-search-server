@@ -4,6 +4,7 @@
 #include <vector>
 
 #include "process_queries.h"
+#include "remove_duplicates.h"
 #include "search_server.h"
 using namespace std;
 void PrintDocument(const Document& document) {
@@ -23,6 +24,12 @@ int main() {
        }) {
     search_server.AddDocument(++id, text, DocumentStatus::ACTUAL, {1, 2});
   }
+
+  search_server.RemoveDocument(4);
+
+  search_server.AddDocument(4, "nasty pigeon john"s, DocumentStatus::ACTUAL,
+                            {1, 2});
+
   cout << "ACTUAL by default:"s << endl;
   // последовательная версия
   for (const Document& document :
@@ -44,5 +51,33 @@ int main() {
            })) {
     PrintDocument(document);
   }
+
+  search_server.AddDocument(5, "nasty pigeon john"s, DocumentStatus::ACTUAL,
+                            {1, 2});
+
+  RemoveDuplicates(search_server);
+
+  cout << "ACTUAL by default:"s << endl;
+  // последовательная версия
+  for (const Document& document :
+       search_server.FindTopDocuments("curly nasty cat"s)) {
+    PrintDocument(document);
+  }
+  cout << "BANNED:"s << endl;
+  // последовательная версия
+  for (const Document& document : search_server.FindTopDocuments(
+           execution::seq, "curly nasty cat"s, DocumentStatus::BANNED)) {
+    PrintDocument(document);
+  }
+  cout << "Even ids:"s << endl;
+  // параллельная версия
+  for (const Document& document : search_server.FindTopDocuments(
+           execution::par, "curly nasty cat cat chameleon"s,
+           [](int document_id, DocumentStatus /*status*/, int /*rating*/) {
+             return document_id % 2 == 0;
+           })) {
+    PrintDocument(document);
+  }
+
   return 0;
 }
