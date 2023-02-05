@@ -32,20 +32,9 @@ class SearchServer {
   void RemoveDocument(const std::execution::parallel_policy&, int document_id);
   void RemoveDocument(int document_id);
   // 1
-  template <
-      typename DocumentPredicate,
-      typename std::enable_if_t<
-          !std::is_same_v<DocumentPredicate, DocumentStatus>, bool> = false>
+  template <typename ExecutionPolicy, typename DocumentPredicate>
   std::vector<Document> FindTopDocuments(
-      const std::execution::sequenced_policy&, std::string_view raw_query,
-      DocumentPredicate document_predicate) const;
-  // 2
-  template <
-      typename DocumentPredicate,
-      typename std::enable_if_t<
-          !std::is_same_v<DocumentPredicate, DocumentStatus>, bool> = false>
-  std::vector<Document> FindTopDocuments(
-      const std::execution::parallel_policy&, std::string_view raw_query,
+      const ExecutionPolicy& policy, std::string_view raw_query,
       DocumentPredicate document_predicate) const;
   // 3
   template <typename ExecutionPolicy>
@@ -148,16 +137,13 @@ SearchServer::SearchServer(const StringContainer& stop_words)
     throw std::invalid_argument("INVALID_SYMBOLS"s);
   }
 }
-// 1
-template <typename DocumentPredicate,
-          typename std::enable_if_t<
-              !std::is_same_v<DocumentPredicate, DocumentStatus>, bool>>
+
+template <typename ExecutionPolicy, typename DocumentPredicate>
 std::vector<Document> SearchServer::FindTopDocuments(
-    const std::execution::sequenced_policy&, std::string_view raw_query,
+    const ExecutionPolicy& policy, std::string_view raw_query,
     DocumentPredicate document_predicate) const {
   const auto query = ParseQuery(raw_query);
-  auto matched_documents =
-      FindAllDocuments(std::execution::seq, query, document_predicate);
+  auto matched_documents = FindAllDocuments(policy, query, document_predicate);
 
   std::sort(matched_documents.begin(), matched_documents.end(),
             [](const Document& lhs, const Document& rhs) {
@@ -172,31 +158,7 @@ std::vector<Document> SearchServer::FindTopDocuments(
   }
   return matched_documents;
 }
-// 2
-template <typename DocumentPredicate,
-          typename std::enable_if_t<
-              !std::is_same_v<DocumentPredicate, DocumentStatus>, bool>>
-std::vector<Document> SearchServer::FindTopDocuments(
-    const std::execution::parallel_policy&, std::string_view raw_query,
-    DocumentPredicate document_predicate) const {
-  const auto query = ParseQuery(raw_query);
-  auto matched_documents =
-      FindAllDocuments(std::execution::par, query, document_predicate);
 
-  std::sort(matched_documents.begin(), matched_documents.end(),
-            [](const Document& lhs, const Document& rhs) {
-              if (std::abs(lhs.relevance - rhs.relevance) < REL_TOLERANCE) {
-                return lhs.rating > rhs.rating;
-              }
-              return lhs.relevance > rhs.relevance;
-            });
-
-  if (matched_documents.size() > MAX_RESULT_DOCUMENT_COUNT) {
-    matched_documents.resize(MAX_RESULT_DOCUMENT_COUNT);
-  }
-  return matched_documents;
-}
-// 3
 template <typename ExecutionPolicy>
 std::vector<Document> SearchServer::FindTopDocuments(
     const ExecutionPolicy& policy, std::string_view raw_query,
@@ -206,20 +168,20 @@ std::vector<Document> SearchServer::FindTopDocuments(
       [status](int /*document_id*/, DocumentStatus document_status,
                int /*rating*/) {
         return status == document_status;
-      });  // 1 or 2 according to policy
+      });
 }
-// 4
+
 template <typename ExecutionPolicy>
 std::vector<Document> SearchServer::FindTopDocuments(
     const ExecutionPolicy& policy, std::string_view raw_query) const {
-  return FindTopDocuments(policy, raw_query, DocumentStatus::ACTUAL);  // 3
+  return FindTopDocuments(policy, raw_query, DocumentStatus::ACTUAL);
 }
-// 5
+
 template <typename DocumentPredicate>
 std::vector<Document> SearchServer::FindTopDocuments(
     std::string_view raw_query, DocumentPredicate document_predicate) const {
   return FindTopDocuments(std::execution::seq, raw_query,
-                          document_predicate);  // 1
+                          document_predicate);
 }
 
 template <typename DocumentPredicate>

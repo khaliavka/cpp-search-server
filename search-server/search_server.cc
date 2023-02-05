@@ -94,18 +94,18 @@ void SearchServer::RemoveDocument(const std::execution::parallel_policy&,
 void SearchServer::RemoveDocument(int document_id) {
   RemoveDocument(std::execution::seq, document_id);
 }
-// 6
+
 std::vector<Document> SearchServer::FindTopDocuments(
     std::string_view raw_query, DocumentStatus status) const {
   return FindTopDocuments(
       raw_query,
       [status](int /*document_id*/, DocumentStatus document_status,
-               int /*rating*/) { return status == document_status; });  // 5
+               int /*rating*/) { return status == document_status; });
 }
-// 7
+
 std::vector<Document> SearchServer::FindTopDocuments(
     std::string_view raw_query) const {
-  return FindTopDocuments(raw_query, DocumentStatus::ACTUAL);  // 6
+  return FindTopDocuments(raw_query, DocumentStatus::ACTUAL);
 }
 
 size_t SearchServer::GetDocumentCount() const { return documents_.size(); }
