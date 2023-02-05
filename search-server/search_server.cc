@@ -35,9 +35,9 @@ void SearchServer::AddDocument(int document_id, std::string_view document,
   raw_documents_.emplace(document_id, document);
   const std::vector<std::string_view> words =
       SplitIntoWordsNoStop(raw_documents_.at(document_id));
-  const double inv_word_count = 1.0 / words.size();
+  const double inv_word_count = 1.0 / static_cast<double>(words.size());
 
-  for (const std::string_view& word : words) {
+  for (std::string_view word : words) {
     word_to_document_freqs_[word][document_id] += inv_word_count;
     document_to_word_freqs_[document_id][word] += inv_word_count;
   }
@@ -53,7 +53,9 @@ void SearchServer::RemoveDocumentInternal(int document_id) {
   documents_.erase(document_id);
   ids_.erase(document_id);
 }
-void SearchServer::RemoveDocument(int document_id) {
+
+void SearchServer::RemoveDocument(const std::execution::sequenced_policy&,
+                                  int document_id) {
   if (ids_.count(document_id) == 0) {
     return;
   }
@@ -64,11 +66,6 @@ void SearchServer::RemoveDocument(int document_id) {
   }
 
   RemoveDocumentInternal(document_id);
-}
-
-void SearchServer::RemoveDocument(const std::execution::sequenced_policy&,
-                                  int document_id) {
-  RemoveDocument(document_id);
 }
 
 void SearchServer::RemoveDocument(const std::execution::parallel_policy&,
@@ -94,23 +91,28 @@ void SearchServer::RemoveDocument(const std::execution::parallel_policy&,
   RemoveDocumentInternal(document_id);
 }
 
+void SearchServer::RemoveDocument(int document_id) {
+  RemoveDocument(std::execution::seq, document_id);
+}
+// 6
 std::vector<Document> SearchServer::FindTopDocuments(
     std::string_view raw_query, DocumentStatus status) const {
   return FindTopDocuments(
       raw_query,
       [status](int /*document_id*/, DocumentStatus document_status,
-               int /*rating*/) { return status == document_status; });
+               int /*rating*/) { return status == document_status; });  // 5
 }
-
+// 7
 std::vector<Document> SearchServer::FindTopDocuments(
     std::string_view raw_query) const {
-  return FindTopDocuments(raw_query, DocumentStatus::ACTUAL);
+  return FindTopDocuments(raw_query, DocumentStatus::ACTUAL);  // 6
 }
 
 size_t SearchServer::GetDocumentCount() const { return documents_.size(); }
 
 std::tuple<std::vector<std::string_view>, DocumentStatus>
-SearchServer::MatchDocument(std::string_view raw_query, int document_id) const {
+SearchServer::MatchDocument(const std::execution::sequenced_policy&,
+                            std::string_view raw_query, int document_id) const {
   using namespace std::literals;
 
   if (ids_.count(document_id) == 0) {
@@ -138,12 +140,6 @@ SearchServer::MatchDocument(std::string_view raw_query, int document_id) const {
 }
 
 std::tuple<std::vector<std::string_view>, DocumentStatus>
-SearchServer::MatchDocument(const std::execution::sequenced_policy&,
-                            std::string_view raw_query, int document_id) const {
-  return MatchDocument(raw_query, document_id);
-}
-
-std::tuple<std::vector<std::string_view>, DocumentStatus>
 SearchServer::MatchDocument(const std::execution::parallel_policy&,
                             std::string_view raw_query, int document_id) const {
   using namespace std::literals;
@@ -154,16 +150,7 @@ SearchServer::MatchDocument(const std::execution::parallel_policy&,
 
   const auto query = ParseQuery(raw_query, false);
   std::vector<std::string_view> matched_words;
-  /*
-    if (std::transform_reduce(std::execution::par,
-            query.minus_words.cbegin(), query.minus_words.cend(), false,
-            std::logical_or{}, [this, document_id](std::string_view word) {
-              return word_to_document_freqs_.count(word) &&
-                     word_to_document_freqs_.at(word).count(document_id);
-            })) {
-      return std::tuple{matched_words, documents_.at(document_id).status};
-    }
-  */
+
   for (std::string_view word : query.minus_words) {
     if (word_to_document_freqs_.count(word) &&
         word_to_document_freqs_.at(word).count(document_id)) {
@@ -185,6 +172,11 @@ SearchServer::MatchDocument(const std::execution::parallel_policy&,
       std::unique(matched_words.begin(), matched_words.end());
   matched_words.resize(std::distance(matched_words.begin(), new_new_end));
   return std::tuple{matched_words, documents_.at(document_id).status};
+}
+
+std::tuple<std::vector<std::string_view>, DocumentStatus>
+SearchServer::MatchDocument(std::string_view raw_query, int document_id) const {
+  return MatchDocument(std::execution::seq, raw_query, document_id);
 }
 
 bool SearchServer::IsStopWord(std::string_view word) const {
@@ -234,14 +226,14 @@ SearchServer::QueryWord SearchServer::ParseQueryWord(
   return {text, is_minus, IsStopWord(text)};
 }
 
-SearchServer::Query SearchServer::ParseQuery(std::string_view text,
-                                             bool sort_query) const {
+SearchServer::Query SearchServer::ParseQuery(std::string_view raw_query,
+                                             bool sort) const {
   using namespace std::literals;
-  if (!IsValidStr(text)) {
+  if (!IsValidStr(raw_query)) {
     throw std::invalid_argument("INVALID_SYMBOLS"s);
   }
   Query query;
-  for (std::string_view word : SplitIntoWords(text)) {
+  for (std::string_view word : SplitIntoWords(raw_query)) {
     const auto query_word = ParseQueryWord(word);
     if (!query_word.is_stop) {
       if (query_word.is_minus) {
@@ -251,7 +243,7 @@ SearchServer::Query SearchServer::ParseQuery(std::string_view text,
       }
     }
   }
-  if (sort_query) {
+  if (sort) {
     std::sort(query.plus_words.begin(), query.plus_words.end());
     const auto new_end =
         std::unique(query.plus_words.begin(), query.plus_words.end());
@@ -259,10 +251,10 @@ SearchServer::Query SearchServer::ParseQuery(std::string_view text,
   }
   return query;
 }
-// Existence required
+// all documents / documents containing word
 double SearchServer::ComputeWordInverseDocumentFreq(
     std::string_view word) const {
-  return std::log(static_cast<double>(GetDocumentCount()) * 1.0 /
+  return std::log(static_cast<double>(GetDocumentCount()) /
                   static_cast<double>(word_to_document_freqs_.at(word).size()));
 }
 
