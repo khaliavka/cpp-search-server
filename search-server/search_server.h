@@ -14,8 +14,9 @@
 #include "document.h"
 #include "string_processing.h"
 
-const int MAX_RESULT_DOCUMENT_COUNT = 5;
-const double TOLERANCE = 1e-6;
+constexpr size_t MAX_RESULT_DOCUMENT_COUNT = 5ull;
+constexpr size_t BUCKET_COUNT = 100ull;
+constexpr double REL_TOLERANCE = 1e-6;
 
 class SearchServer {
  public:
@@ -160,7 +161,7 @@ std::vector<Document> SearchServer::FindTopDocuments(
 
   std::sort(matched_documents.begin(), matched_documents.end(),
             [](const Document& lhs, const Document& rhs) {
-              if (std::abs(lhs.relevance - rhs.relevance) < TOLERANCE) {
+              if (std::abs(lhs.relevance - rhs.relevance) < REL_TOLERANCE) {
                 return lhs.rating > rhs.rating;
               }
               return lhs.relevance > rhs.relevance;
@@ -184,7 +185,7 @@ std::vector<Document> SearchServer::FindTopDocuments(
 
   std::sort(matched_documents.begin(), matched_documents.end(),
             [](const Document& lhs, const Document& rhs) {
-              if (std::abs(lhs.relevance - rhs.relevance) < TOLERANCE) {
+              if (std::abs(lhs.relevance - rhs.relevance) < REL_TOLERANCE) {
                 return lhs.rating > rhs.rating;
               }
               return lhs.relevance > rhs.relevance;
@@ -225,7 +226,6 @@ template <typename DocumentPredicate>
 std::vector<Document> SearchServer::FindAllDocuments(
     const std::execution::sequenced_policy&, const Query& query,
     DocumentPredicate document_predicate) const {
-
   std::map<int, double> document_to_relevance;
 
   for (std::string_view word : query.plus_words) {
@@ -271,8 +271,8 @@ template <typename DocumentPredicate>
 std::vector<Document> SearchServer::FindAllDocuments(
     const std::execution::parallel_policy&, const Query& query,
     DocumentPredicate document_predicate) const {
-
-  ConcurrentMap<int, double> document_to_relevance(100ull);
+      
+  ConcurrentMap<int, double> document_to_relevance(BUCKET_COUNT);
 
   for_each(
       std::execution::par, query.plus_words.cbegin(), query.plus_words.cend(),
@@ -309,7 +309,7 @@ std::vector<Document> SearchServer::FindAllDocuments(
       });
 
   std::vector<Document> matched_documents;
-  
+
   for (const auto [document_id, relevance] :
        document_to_relevance.BuildOrdinaryMap()) {
     matched_documents.push_back(
