@@ -31,7 +31,7 @@ class SearchServer {
   void RemoveDocument(const std::execution::sequenced_policy&, int document_id);
   void RemoveDocument(const std::execution::parallel_policy&, int document_id);
   void RemoveDocument(int document_id);
- 
+
   template <typename ExecutionPolicy, typename DocumentPredicate>
   std::vector<Document> FindTopDocuments(
       const ExecutionPolicy& policy, std::string_view raw_query,
@@ -49,7 +49,7 @@ class SearchServer {
   template <typename DocumentPredicate>
   std::vector<Document> FindTopDocuments(
       std::string_view raw_query, DocumentPredicate document_predicate) const;
- 
+
   std::vector<Document> FindTopDocuments(std::string_view raw_query,
                                          DocumentStatus status) const;
 
@@ -166,9 +166,7 @@ std::vector<Document> SearchServer::FindTopDocuments(
   return FindTopDocuments(
       policy, raw_query,
       [status](int /*document_id*/, DocumentStatus document_status,
-               int /*rating*/) {
-        return status == document_status;
-      });
+               int /*rating*/) { return status == document_status; });
 }
 
 template <typename ExecutionPolicy>
@@ -180,14 +178,14 @@ std::vector<Document> SearchServer::FindTopDocuments(
 template <typename DocumentPredicate>
 std::vector<Document> SearchServer::FindTopDocuments(
     std::string_view raw_query, DocumentPredicate document_predicate) const {
-  return FindTopDocuments(std::execution::seq, raw_query,
-                          document_predicate);
+  return FindTopDocuments(std::execution::seq, raw_query, document_predicate);
 }
 
 template <typename DocumentPredicate>
 std::vector<Document> SearchServer::FindAllDocuments(
     const std::execution::sequenced_policy&, const Query& query,
     DocumentPredicate document_predicate) const {
+
   std::map<int, double> document_to_relevance;
 
   for (std::string_view word : query.plus_words) {
@@ -205,7 +203,7 @@ std::vector<Document> SearchServer::FindAllDocuments(
       }
     }
   }
-  /*
+
   for (std::string_view word : query.minus_words) {
     if (word_to_document_freqs_.count(word) == 0) {
       continue;
@@ -214,17 +212,11 @@ std::vector<Document> SearchServer::FindAllDocuments(
       document_to_relevance.erase(document_id);
     }
   }
-  */
+
   std::vector<Document> matched_documents;
   for (const auto [document_id, relevance] : document_to_relevance) {
     matched_documents.push_back(
         {document_id, relevance, documents_.at(document_id).rating});
-    for (std::string_view word : query.minus_words) {
-      if (word_to_document_freqs_.count(word) != 0 &&
-          word_to_document_freqs_.at(word).count(document_id) != 0) {
-        matched_documents.pop_back();
-      }
-    }
   }
   return matched_documents;
 }
@@ -233,11 +225,13 @@ template <typename DocumentPredicate>
 std::vector<Document> SearchServer::FindAllDocuments(
     const std::execution::parallel_policy&, const Query& query,
     DocumentPredicate document_predicate) const {
+      
   ConcurrentMap<int, double> document_to_relevance(BUCKET_COUNT);
 
   for_each(
-      std::execution::par, query.plus_words.cbegin(), query.plus_words.cend(),
-      [this, &document_predicate, &document_to_relevance](const auto& word) {
+      std::execution::par, query.plus_words.cbegin(),
+      query.plus_words.cend(), [this, &document_predicate,
+      &document_to_relevance](const auto& word) {
         if (word_to_document_freqs_.count(word) == 0) {
           return;
         }
@@ -258,12 +252,14 @@ std::vector<Document> SearchServer::FindAllDocuments(
       });
 
   for_each(
-      std::execution::par, query.minus_words.cbegin(), query.minus_words.cend(),
-      [this, &document_to_relevance](const auto& word) {
+      std::execution::par, query.minus_words.cbegin(),
+      query.minus_words.cend(), [this, &document_to_relevance](const auto&
+      word) {
         if (word_to_document_freqs_.count(word) == 0) {
           return;
         }
-        for (const auto [document_id, _] : word_to_document_freqs_.at(word)) {
+        for (const auto [document_id, _] : word_to_document_freqs_.at(word))
+        {
           document_to_relevance.Erase(document_id);
         }
         return;
